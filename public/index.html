@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Maggy</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Maggy">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#121212">
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <script src="config.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered!'))
+                    .catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: white; text-align: center; padding: 10px; margin: 0; user-select: none; touch-action: manipulation; }
+        
+        /* TABS */
+        .tabs { display: flex; justify-content: center; margin-bottom: 20px; background: #1e1e1e; padding: 5px; border-radius: 15px; max-width: 380px; margin-left: auto; margin-right: auto; }
+        .tab { flex: 1; padding: 12px; cursor: pointer; border-radius: 10px; font-weight: bold; color: #888; transition: 0.3s; }
+        .tab.active { background: #333; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        
+        /* SECTIONS */
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* CONTROLLER */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 400px; margin: 0 auto; }
+        button { background: #333; border: none; border-radius: 12px; padding: 18px; font-size: 16px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.1s; }
+        button:active { transform: scale(0.96); background: #444; }
+        .btn-happy { background: #FFD700; color: #000; } 
+        .btn-angry { background: #FF4444; } 
+        .btn-love { background: #FF69B4; } 
+        .btn-sleep { background: #4da6ff; } 
+        .btn-dance { background: #9d4eff; } 
+        .btn-game { background: #00e676; color: #000; }
+        .btn-clock { background: #ff9800; color: #000; }
+        .btn-pomo { background: #e53935; color: white; }
+        .btn-auto { grid-column: span 2; background: #222; border: 1px solid #444; color: #aaa; } 
+        .btn-auto.active { border-color: #0f0; color: #0f0; background: #111; }
+        
+        /* CREATOR */
+        .canvas-container { position: relative; width: 270px; margin: 0 auto 20px auto; padding: 20px 5px 30px 5px; background: #2a2a2a; border-radius: 10px; border: 2px solid #444; box-shadow: inset 0 0 20px #000; }
+        canvas { background: #000; border: 1px solid #555; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+        .tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 350px; margin: 0 auto 15px auto; }
+        .tool-btn { padding: 10px; font-size: 12px; background: #222; border: 1px solid #444; color: #ccc; }
+        .tool-btn.active { background: #00e676; color: black; border-color: #00e676; font-weight: bold; }
+        
+        .action-row { display: flex; gap: 10px; justify-content: center; max-width: 350px; margin: 0 auto; }
+        .btn-send { background: #fff; color: #000; flex: 2; } .btn-clear { background: #b71c1c; flex: 1; }
+        
+        input[type="file"] { display: none; }
+        .upload-label { background: #333; padding: 12px; border-radius: 12px; font-size: 12px; display: block; margin-top: 15px; cursor: pointer; border: 1px dashed #666; color: #aaa; }
+        .live-toggle { margin: 10px 0; font-size: 12px; color: #aaa; }
+        .live-toggle input { margin-right: 5px; vertical-align: middle; }
+        
+        .status { margin-top: 20px; font-size: 12px; color: #666; font-family: monospace; }
+        .status.on { color: #0f0; }
+        
+        /* Message overlay for text tool */
+        #text-instruction { color: #00e676; font-size: 11px; margin-top: 5px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('controller')">REMOTE</div>
+        <div class="tab" onclick="switchTab('custom')">CREATOR</div>
+    </div>
+
+    <div id="section-controller" class="section active">
+        <div class="grid">
+            <button class="btn-happy" onclick="sendCmd('HAPPY')">😊 Happy</button>
+            <button class="btn-angry" onclick="sendCmd('ANGRY')">😡 Angry</button>
+            <button class="btn-love"  onclick="sendCmd('LOVE')">❤️ Love</button>
+            <button class="btn-sleep" onclick="sendCmd('SLEEPY')">💤 Sleepy</button>
+            <button class="btn-surprised" onclick="sendCmd('SURPRISED')">😲 Surprised</button>
+            <button class="btn-giddy" onclick="sendCmd('GIDDY')">💫 Dizzy</button>
+            <button class="btn-dance" onclick="sendCmd('DANCE')">💃 Dance</button>
+            <button class="btn-game"  onclick="sendCmd('GAME')">🎮 Game Mode</button>
+            <button class="btn-clock" onclick="sendCmd('CLOCK')">⏱️ CLOCK</button>
+            <button class="btn-pomo" onclick="sendCmd('POMODORO')">🍅 POMODORO</button>
+            <button id="btn-auto" class="btn-auto" onclick="sendCmd('AUTO')">🤖 SENSOR MODE (AUTO)</button>
+        </div>
+    </div>
+
+    <div id="section-custom" class="section">
+        <div class="canvas-container">
+            <div style="font-size:10px; color:#666; margin-bottom:5px; letter-spacing: 1px;">OLED 128x64</div>
+            <canvas id="oledCanvas" width="128" height="64" style="width:256px; height:128px;"></canvas>
+            <div id="text-instruction">Tap canvas to place text</div>
+        </div>
+
+        <div class="live-toggle">
+            <label><input type="checkbox" id="liveMode" checked> Auto-Send to Robot</label>
+        </div>
+
+        <div class="tools">
+            <button class="tool-btn active" onclick="setTool('pencil')">✏️ Pencil</button>
+            <button class="tool-btn" onclick="setTool('line')">📏 Line</button>
+            <button class="tool-btn" onclick="setTool('circle')">⭕ Circle</button>
+            <button class="tool-btn" onclick="setTool('text')">🔤 Text</button>
+        </div>
+
+        <div class="action-row">
+            <button class="btn-clear" onclick="clearCanvas()">❌ Clear</button>
+            <button class="btn-send" onclick="sendCustomDraw()">🚀 SEND NOW</button>
+        </div>
+
+        <label class="upload-label">
+            📂 Upload Image (Auto B&W)
+            <input type="file" id="imgUpload" accept="image/*" onchange="handleImage(this)">
+        </label>
+    </div>
+
+    <div id="status" class="status">Connecting...</div>
+
+    <script>
+        // Init Database globally
+        const db = firebase.database();
+        
+        // --- VARS ---
+        const statusDiv = document.getElementById("status");
+        const btnAuto = document.getElementById("btn-auto");
+        const canvas = document.getElementById("oledCanvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        const txtInstruct = document.getElementById("text-instruction");
+        
+        // Init Canvas
+        ctx.fillStyle = "black"; ctx.fillRect(0,0,128,64);
+        ctx.strokeStyle = "white"; ctx.fillStyle = "white"; ctx.lineWidth = 1;
+        ctx.font = "10px monospace"; 
+
+        let currentTool = 'pencil';
+        let isDrawing = false;
+        let startX, startY;
+        let snapshot;
+        let isPlacingText = false;
+        let pendingText = "";
+
+        // --- TABS ---
+        window.switchTab = function(mode) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            if(mode === 'controller') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('section-controller').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('section-custom').classList.add('active');
+            }
+        }
+
+        // --- TOOL SELECTOR ---
+        window.setTool = function(tool) {
+            currentTool = tool;
+            isPlacingText = false; 
+            txtInstruct.style.display = 'none';
+            
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if(tool === 'text') {
+                const txt = prompt("Type your text:");
+                if(txt) {
+                    pendingText = txt;
+                    isPlacingText = true;
+                    snapshot = ctx.getImageData(0,0,128,64); 
+                    txtInstruct.style.display = 'block';
+                    statusDiv.innerText = "Move to position, Click to Place";
+                } else {
+                    setTool('pencil');
+                }
+            }
+        }
+
+        window.clearCanvas = function() {
+            ctx.fillStyle = "black"; ctx.fillRect(0,0,128,64);
+            if(document.getElementById('liveMode').checked) sendCustomDraw();
+        }
+
+        // --- DRAWING LOGIC ---
+        const getPos = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        const startDraw = (e) => {
+            const pos = getPos(e);
+            
+            if (isPlacingText) {
+                ctx.putImageData(snapshot, 0, 0); 
+                ctx.fillStyle = "white";
+                ctx.fillText(pendingText, pos.x, pos.y);
+                
+                isPlacingText = false; 
+                txtInstruct.style.display = 'none';
+                statusDiv.innerText = "Text Placed.";
+                
+                if(document.getElementById('liveMode').checked) sendCustomDraw();
+                return; 
+            }
+
+            isDrawing = true;
+            startX = pos.x; startY = pos.y;
+            snapshot = ctx.getImageData(0,0,128,64);
+            
+            if(currentTool === 'pencil') {
+                ctx.beginPath(); ctx.moveTo(startX, startY);
+            }
+        }
+
+        const draw = (e) => {
+            const pos = getPos(e);
+            e.preventDefault();
+
+            if (isPlacingText) {
+                ctx.putImageData(snapshot, 0, 0); 
+                ctx.fillStyle = "white";
+                ctx.fillText(pendingText, pos.x, pos.y); 
+                return;
+            }
+
+            if(!isDrawing) return;
+
+            if(currentTool === 'pencil') { 
+                ctx.lineTo(pos.x, pos.y); ctx.stroke(); 
+            } 
+            else if (currentTool === 'line') { 
+                ctx.putImageData(snapshot, 0, 0); 
+                ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(pos.x, pos.y); ctx.stroke(); 
+            } 
+            else if (currentTool === 'circle') { 
+                ctx.putImageData(snapshot, 0, 0); 
+                ctx.beginPath(); 
+                let r = Math.sqrt(Math.pow(pos.x - startX, 2) + Math.pow(pos.y - startY, 2)); 
+                ctx.arc(startX, startY, r, 0, 2 * Math.PI); ctx.stroke(); 
+            }
+        }
+
+        const stopDraw = () => {
+            if(isDrawing) {
+                isDrawing = false; 
+                ctx.beginPath();
+                if(document.getElementById('liveMode').checked) sendCustomDraw();
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('touchstart', startDraw);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDraw);
+
+        // --- IMAGE UPLOAD ---
+        window.handleImage = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        ctx.fillStyle = "black"; ctx.fillRect(0,0,128,64);
+                        ctx.drawImage(img, 0, 0, 128, 64);
+                        
+                        const imgData = ctx.getImageData(0,0,128,64); 
+                        const d = imgData.data;
+                        for (let i = 0; i < d.length; i += 4) { 
+                            const avg = (d[i] + d[i+1] + d[i+2]) / 3;
+                            const val = avg > 100 ? 255 : 0; 
+                            d[i] = d[i+1] = d[i+2] = val; 
+                        }
+                        ctx.putImageData(imgData, 0, 0);
+                        sendCustomDraw();
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- SEND TO ROBOT (CHUNKED & VAULTED) ---
+        window.sendCustomDraw = function() {
+            statusDiv.innerText = "Sending...";
+            const imgData = ctx.getImageData(0, 0, 128, 64);
+            const pixels = imgData.data;
+            let hexString = ""; let byte = 0; let bitCnt = 0;
+
+            for(let i=0; i<pixels.length; i+=4) {
+                if(pixels[i] > 128) byte |= (1 << (7 - bitCnt));
+                bitCnt++;
+                if(bitCnt == 8) {
+                    let h = byte.toString(16).toUpperCase();
+                    if(h.length < 2) h = "0" + h;
+                    hexString += h; byte = 0; bitCnt = 0;
+                }
+            }
+
+            const chunks = hexString.match(/.{1,512}/g);
+            
+            let updates = {};
+            updates['/shoans_secret_vault_7788/img_parts/0'] = chunks[0];
+            updates['/shoans_secret_vault_7788/img_parts/1'] = chunks[1];
+            updates['/shoans_secret_vault_7788/img_parts/2'] = chunks[2];
+            updates['/shoans_secret_vault_7788/img_parts/3'] = chunks[3];
+            updates['/shoans_secret_vault_7788/emotion'] = 'CUSTOM';
+            updates['/shoans_secret_vault_7788/updateID'] = Date.now(); 
+
+            db.ref().update(updates, (error) => {
+                if(error) statusDiv.innerText = "Send Failed!";
+                else statusDiv.innerText = "Sent to Robot!";
+            });
+        }
+
+        window.sendCmd = function(emo) { db.ref('/shoans_secret_vault_7788/emotion').set(emo); }
+
+        db.ref('/shoans_secret_vault_7788/emotion').on('value', (snapshot) => {
+            const val = snapshot.val();
+            statusDiv.innerText = "Robot State: " + val;
+            statusDiv.classList.add("on");
+            if(val === "AUTO") btnAuto.classList.add("active");
+            else btnAuto.classList.remove("active");
+        });
+    </script>
+</body>
+</html>
