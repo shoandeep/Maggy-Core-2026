@@ -296,8 +296,7 @@
                     hexString += h; byte = 0; bitCnt = 0;
                 }
             }
-            const chunks = hexString.match(/.{1,512}/g) || [];
-            if (chunks.length !== 4) { statusDiv.innerText = "Draw error: unexpected image size"; return; }
+            const chunks = hexString.match(/.{1,512}/g);
             let updates = {};
             updates['/shoans_secret_vault_7788/img_parts/0'] = chunks[0];
             updates['/shoans_secret_vault_7788/img_parts/1'] = chunks[1];

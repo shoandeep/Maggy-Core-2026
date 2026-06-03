@@ -134,7 +134,7 @@ void performAction(int durationMs, int logicType, float p1, float p2) {
     else if (logicType == 2) { float wave = sin(elapsed / 40.0) * p1; leftEye.targetX = leftEye.defaultX + wave; rightEye.targetX = rightEye.defaultX + wave; }
     float smooth = 0.15; 
     leftEye.x += (leftEye.targetX - leftEye.x) * smooth; leftEye.y += (leftEye.targetY - leftEye.y) * smooth; leftEye.width += (leftEye.targetWidth - leftEye.width) * smooth; leftEye.height += (leftEye.targetHeight - leftEye.height) * smooth; leftEye.topEyelid += (leftEye.targetTopEyelid - leftEye.topEyelid) * smooth;
-    rightEye.x += (rightEye.targetX - rightEye.x) * smooth; rightEye.y += (rightEye.targetY - rightEye.y) * smooth; rightEye.width += (rightEye.targetWidth - rightEye.width) * smooth; rightEye.height += (rightEye.targetHeight - rightEye.height) * smooth; rightEye.topEyelid += (rightEye.targetTopEyelid - rightEye.topEyelid) * smooth; mouth.width += (mouth.targetWidth - mouth.width) * smooth;
+    rightEye.x += (rightEye.targetX - rightEye.x) * smooth; rightEye.y += (rightEye.targetY - rightEye.y) * smooth; rightEye.width += (rightEye.targetWidth - rightEye.width) * smooth; rightEye.height += (rightEye.targetHeight - rightEye.height) * smooth; rightEye.topEyelid += (rightEye.targetTopEyelid - leftEye.topEyelid) * smooth; mouth.width += (mouth.targetWidth - mouth.width) * smooth;
     display.clearDisplay(); drawEye(leftEye, true); drawEye(rightEye, false); drawMouth(); display.display(); delay(10); 
   }
 }

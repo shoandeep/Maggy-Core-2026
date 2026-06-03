@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  validate-config:
+    name: Validate config & web assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON files
+        run: |
+          for f in firebase.json .firebaserc public/manifest.json database.rules.json; do
+            echo "Validating $f"
+            python3 -m json.tool "$f" > /dev/null
+          done
+      - name: Check required web assets exist
+        run: |
+          test -f public/index.html
+          test -f public/sw.js
+          test -f public/config.example.js
+
+  build-firmware:
+    name: Build firmware (PlatformIO)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+      - name: Generate stub secrets.h for CI
+        run: cp XiaoDevModeTest/secrets.example.h XiaoDevModeTest/secrets.h
+      - name: Build
+        run: pio run
