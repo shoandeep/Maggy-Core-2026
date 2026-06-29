@@ -1,0 +1,36 @@
+{
+  "//": "TARGET security rules for the Phase 1 multi-tenant model. DO NOT DEPLOY until Firebase Auth + per-device auth are in place (see docs/ROADMAP.md). The currently-deployed interim rules live in database.rules.json.",
+
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "devices": {
+      "$deviceId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('devices').child($deviceId).exists()",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('devices').child($deviceId).exists()",
+
+        "emotion":         { ".validate": "newData.isString() && newData.val().length <= 16" },
+        "dev_mode_active": { ".validate": "newData.isBoolean()" },
+        "dev_cmd":         { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "pomo_cmd":        { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "updateID":        { ".validate": "newData.isNumber()" },
+
+        "telemetry": {
+          ".write": "auth != null && auth.token.deviceId === $deviceId"
+        },
+
+        "img_parts": {
+          "$part": { ".validate": "newData.isString() && newData.val().length <= 1024" }
+        }
+      }
+    }
+  }
+}

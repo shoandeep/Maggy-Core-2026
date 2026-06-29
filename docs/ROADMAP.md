@@ -13,9 +13,10 @@ Checked items are done on branch `claude/repo-analysis-commercial-WKD0q`.
       (the token exposed in `public/config.js` git history). _Owner action._
 - [ ] **Scrub git history** of `public/config.js` (e.g. `git filter-repo`).
       _Destructive / rewrites history — needs explicit go-ahead._
-- [ ] Author and deploy real RTDB **security rules** (target in
-      `database.rules.json`). Deploy only **after** the auth migration, or it
-      will lock out the current unauthenticated device.
+- [x] **Interim RTDB lockdown**: rules now require `auth != null`
+      (`database.rules.json`); web app signs in anonymously; firmware keeps
+      admin access via its token. Closes the public read/write hole. See
+      `docs/SECURITY.md` to deploy. _(Full per-device model: `database.rules.target.json`, Phase 1.)_
 - [ ] Put **OTA behind authentication** (ElegantOTA credentials).
 - [ ] Remove `client->setInsecure()`; pin/verify TLS certificates.
 - [ ] Gate the remote dev-portal trigger so it can't be abused.
